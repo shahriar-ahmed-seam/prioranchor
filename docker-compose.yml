@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  prioranchor-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: prioranchor:latest
+    container_name: prioranchor-telemetry
+    ports:
+      - "8000:8000"
+    volumes:
+      - prior_cache_vol:/app/prior_cache
+      - checkpoints_vol:/app/checkpoints
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+volumes:
+  prior_cache_vol:
+  checkpoints_vol:
