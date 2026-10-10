@@ -1,0 +1,16 @@
+.venv
+__pycache__
+*.pyc
+.git
+.pytest_cache
+.ruff_cache
+.coverage
+*.egg-info
+dist
+build
+eval_reports
+checkpoints
+prior_cache
+ENGINEERING_PLAYBOOK_PROMPT.md
+.agents
+.github
