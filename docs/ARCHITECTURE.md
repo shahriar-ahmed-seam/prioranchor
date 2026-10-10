@@ -86,6 +86,14 @@ $$\mathcal{L}_{total} = \mathcal{L}_{subject} + \lambda(t) \mathcal{L}_{prior}$$
 
 When $\lambda > 0$, any parameter update that causes the model to output the customized subject when prompted with generic class text produces a steep penalty under $\mathcal{L}_{prior}$, preserving category diversity.
 
+### 4. Ecosystem Adapters and Inference Pipeline
+
+- **SafeTensors Binary Serialization**: Zero-copy binary serialization format using an 8-byte uint64 header prefix, UTF-8 JSON tensor map, and contiguous little-endian float32 buffers, fully interoperable with Diffusers and ComfyUI.
+- **PriorAnchorPipeline**: Inference runtime coordinating Classifier-Free Guidance (CFG):
+  $$\epsilon_{guided} = \epsilon_{uncond} + s \cdot (\epsilon_{cond} - \epsilon_{uncond})$$
+  Supports exact weight folding (`fuse_lora`) for zero-overhead inference execution:
+  $$W_{fused} = W_{base} + \frac{\alpha}{r} B \cdot A$$
+
 ## Failure Modes and Mitigations
 
 | Failure Mode | Root Cause | Architectural Mitigation |

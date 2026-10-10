@@ -10,8 +10,30 @@ readme = "README.md"
 authors = [
     { name = "PriorAnchor Core Engineering Team", email = "engineering@prioranchor.dev" }
 ]
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 requires-python = ">=3.10"
+keywords = [
+    "dreambooth",
+    "diffusion",
+    "lora",
+    "peft",
+    "prior-preservation",
+    "concept-drift",
+    "generative-ai",
+    "stable-diffusion",
+    "diffusers",
+    "safetensors",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "pydantic>=2.5.0",
     "typer>=0.12.0",
@@ -22,11 +44,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+safetensors = [
+    "safetensors>=0.4.0",
+]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "ruff>=0.3.0",
+    "build>=1.0.0",
+    "twine>=5.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/shahriar-ahmed-seam/prioranchor"
+Repository = "https://github.com/shahriar-ahmed-seam/prioranchor"
+Documentation = "https://github.com/shahriar-ahmed-seam/prioranchor#readme"
+"Bug Tracker" = "https://github.com/shahriar-ahmed-seam/prioranchor/issues"
 
 [project.scripts]
 prioranchor = "prioranchor.cli.main:app"
