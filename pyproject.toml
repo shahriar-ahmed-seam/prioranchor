@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prioranchor"
+version = "0.1.0"
+description = "Dual-Objective Prior-Preservation Fine-Tuning, Concept-Drift Mitigation, and Parameter-Efficient Subject Personalization Engine for Generative Diffusion Models"
+readme = "README.md"
+authors = [
+    { name = "PriorAnchor Core Engineering Team", email = "engineering@prioranchor.dev" }
+]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.5.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.3.0",
+]
+
+[project.scripts]
+prioranchor = "prioranchor.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

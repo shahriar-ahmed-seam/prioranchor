@@ -1,0 +1,28 @@
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Testing & Linting
+.pytest_cache/
+.ruff_cache/
+.coverage
+.mypy_cache/
+
+# Local Output Data & Weights
+*.safetensors
+*.ckpt
+*.pt
+*.bin
+prior_cache/
+eval_reports/
+checkpoints/
+logs/
+
+# Agent configuration & meta folders
+.agents/
+.github/
+ENGINEERING_PLAYBOOK_PROMPT.md
