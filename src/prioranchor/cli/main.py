@@ -263,12 +263,21 @@ def export_cmd(
     class_noun: str = typer.Option("dog", "--class-noun"),
 ) -> None:
     """Export serialized LoRA weights to external ecosystem formats."""
-    container = LoRAContainer(LoRAConfig(rank=16))
+    rank = 16
+    alpha = 32.0
+    ckpt_path = Path(checkpoint)
+    if ckpt_path.exists():
+        with open(ckpt_path, "r", encoding="utf-8") as f:
+            ckpt_data = json.load(f)
+            rank = ckpt_data.get("rank", 16)
+            alpha = ckpt_data.get("alpha", 32.0)
+
+    container = LoRAContainer(LoRAConfig(rank=rank, alpha=alpha))
     for m in ["to_q", "to_k", "to_v", "to_out.0"]:
         container.inject_layer(f"unet.attention.{m}", in_features=16, out_features=16)
 
-    if Path(checkpoint).exists():
-        load_lora_checkpoint(container, checkpoint)
+    if ckpt_path.exists():
+        load_lora_checkpoint(container, str(ckpt_path))
 
     fmt = format.lower().strip()
     if fmt == "diffusers":
