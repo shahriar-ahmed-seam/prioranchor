@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PriorAnchor // Developer Telemetry Workbench</title>
+  <style>
+    :root {
+      --bg-canvas: #090b0e;
+      --bg-surface: #101318;
+      --bg-panel: #161b22;
+      --bg-panel-hover: #1c222b;
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-active: rgba(255, 255, 255, 0.16);
+      --text-main: #f0f3f6;
+      --text-muted: #8b949e;
+      --text-dim: #6e7681;
+      --accent-green: #238636;
+      --accent-green-bright: #3fb950;
+      --accent-blue: #58a6ff;
+      --accent-amber: #d29922;
+      --accent-cyan: #39c5bb;
+      --accent-magenta: #bc8cff;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header Bar */
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--accent-cyan);
+      stroke-width: 1.5;
+      fill: none;
+    }
+
+    .brand-title {
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.2px;
+    }
+
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-green-bright);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green-bright);
+      box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
+    }
+
+    /* Main Grid Layout */
+    .workbench {
+      display: grid;
+      grid-template-columns: 340px 1fr 380px;
+      flex: 1;
+      height: calc(100vh - 48px);
+      overflow: hidden;
+    }
+
+    .col {
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: var(--bg-surface);
+    }
+    .col:last-child { border-right: none; }
+
+    .pane-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .pane-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pane-title svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--text-dim);
+      stroke-width: 1.5;
+      fill: none;
+    }
+
+    .pane-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Forms and Controls */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .form-input {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .form-input:focus {
+      border-color: var(--border-active);
+    }
+
+    .btn {
+      background: var(--accent-green);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s ease;
+    }
+    .btn:hover {
+      background: #2ea043;
+    }
+    .btn-secondary {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-panel-hover);
+    }
+
+    /* Telemetry HUD Cards */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 12px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .stat-meta {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Dual Loss Canvas Visualizer */
+    .chart-container {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chart-legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-line {
+      width: 14px;
+      height: 2px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 220px;
+      background: #090b0e;
+      border: 1px solid var(--border-subtle);
+      border-radius: 3px;
+    }
+
+    /* Raw Terminal / JSON Stream Pane */
+    .json-inspector {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #8b949e;
+      overflow-x: auto;
+      max-height: 380px;
+      white-space: pre;
+    }
+
+    .progress-bar-bg {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent-cyan);
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span class="brand-title">PriorAnchor</span>
+      <span class="badge">v0.1.0</span>
+      <span class="badge">Dual-Stream Diffusion PEFT</span>
+    </div>
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span id="sys-status">OPERATIONAL</span>
+    </div>
+  </header>
+
+  <main class="workbench">
+    <!-- Left Column: Optimization Controls -->
+    <section class="col">
+      <div class="pane-header">
+        <span class="pane-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Optimization Setup
+        </span>
+      </div>
+      <div class="pane-body">
+        <div class="form-group">
+          <label class="form-label">Base Diffusion Backbone</label>
+          <input type="text" id="cfg-base" class="form-input" value="runwayml/stable-diffusion-v1-5">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Identifier Token [V]</label>
+          <input type="text" id="cfg-token" class="form-input" value="[V]">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Class Category Noun</label>
+          <input type="text" id="cfg-class" class="form-input" value="dog">
+        </div>
+        <div class="metric-grid">
+          <div class="form-group">
+            <label class="form-label">Prior Lambda (&lambda;)</label>
+            <input type="number" id="cfg-lambda" class="form-input" value="1.0" step="0.1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">LoRA Rank (r)</label>
+            <input type="number" id="cfg-rank" class="form-input" value="16">
+          </div>
+        </div>
+        <div class="metric-grid">
+          <div class="form-group">
+            <label class="form-label">Steps</label>
+            <input type="number" id="cfg-steps" class="form-input" value="25" min="10" max="200">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Learning Rate</label>
+            <input type="text" id="cfg-lr" class="form-input" value="1e-4">
+          </div>
+        </div>
+        <button id="btn-train" class="btn" onclick="executeTraining()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run PriorAnchor Training
+        </button>
+        <button id="btn-eval" class="btn btn-secondary" onclick="executeEvaluation()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Evaluate Concept Drift
+        </button>
+      </div>
+    </section>
+
+    <!-- Center Column: Dual Loss Canvas & Live Telemetry -->
+    <section class="col">
+      <div class="pane-header">
+        <span class="pane-title">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Dual-Objective Convergence Telemetry
+        </span>
+      </div>
+      <div class="pane-body">
+        <div class="chart-container">
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-line" style="background: var(--accent-magenta);"></div>
+              <span>L_subject (Fidelity)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-line" style="background: var(--accent-amber);"></div>
+              <span>L_prior (Preservation)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-line" style="background: var(--accent-cyan);"></div>
+              <span>L_total</span>
+            </div>
+          </div>
+          <canvas id="lossCanvas" width="600" height="220"></canvas>
+          <div class="progress-bar-bg">
+            <div id="trainProgress" class="progress-bar-fill"></div>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="stat-card">
+            <div class="stat-label">Subject Fidelity (DINO / CLIP-I)</div>
+            <div class="stat-value" id="val-fid">--</div>
+            <div class="stat-meta">Target: &ge; 0.7500</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Prompt Alignment (CLIP-T)</div>
+            <div class="stat-value" id="val-prompt">--</div>
+            <div class="stat-meta">Target: &ge; 0.7000</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Class Drift Divergence</div>
+            <div class="stat-value" id="val-drift">--</div>
+            <div class="stat-meta">Target: &le; 0.2500</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Language Bleed Index (LBI)</div>
+            <div class="stat-value" id="val-bleed">--</div>
+            <div class="stat-meta">Zero Bleed Goal: &le; 0.1500</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Inspector & Ecosystem Export -->
+    <section class="col">
+      <div class="pane-header">
+        <span class="pane-title">
+          <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Telemetry Inspector
+        </span>
+      </div>
+      <div class="pane-body">
+        <div class="form-group">
+          <label class="form-label">Ecosystem Adapter Exporter</label>
+          <div style="display: flex; gap: 8px;">
+            <select id="export-fmt" class="form-input" style="flex: 1;">
+              <option value="diffusers">Hugging Face Diffusers</option>
+              <option value="comfyui">ComfyUI ModelSpec</option>
+            </select>
+            <button class="btn btn-secondary" onclick="executeExport()">Export</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Live JSON Stream</label>
+          <div id="inspector-output" class="json-inspector">// Idle. Trigger optimization or evaluation above.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let lossHistory = [];
+
+    async function executeTraining() {
+      const btn = document.getElementById('btn-train');
+      btn.disabled = true;
+      btn.innerText = 'Training...';
+      document.getElementById('trainProgress').style.width = '20%';
+
+      const payload = {
+        base_model: document.getElementById('cfg-base').value,
+        token: document.getElementById('cfg-token').value,
+        class_noun: document.getElementById('cfg-class').value,
+        prior_lambda: parseFloat(document.getElementById('cfg-lambda').value),
+        rank: parseInt(document.getElementById('cfg-rank').value),
+        steps: parseInt(document.getElementById('cfg-steps').value),
+        learning_rate: parseFloat(document.getElementById('cfg-lr').value)
+      };
+
+      try {
+        const res = await fetch('/api/train/run', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        document.getElementById('trainProgress').style.width = '100%';
+        lossHistory = data.history || [];
+        renderLossChart(lossHistory);
+        document.getElementById('inspector-output').innerText = JSON.stringify(data, null, 2);
+        await executeEvaluation();
+      } catch (err) {
+        document.getElementById('inspector-output').innerText = '// Error: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Run PriorAnchor Training';
+        setTimeout(() => { document.getElementById('trainProgress').style.width = '0%'; }, 1500);
+      }
+    }
+
+    async function executeEvaluation() {
+      const res = await fetch('/api/eval/run', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          token: document.getElementById('cfg-token').value,
+          class_noun: document.getElementById('cfg-class').value
+        })
+      });
+      const data = await res.json();
+      document.getElementById('val-fid').innerText = data.fidelity.subject_fidelity.toFixed(4);
+      document.getElementById('val-prompt').innerText = data.fidelity.prompt_alignment.toFixed(4);
+      document.getElementById('val-drift').innerText = data.drift.class_drift_divergence.toFixed(4);
+      document.getElementById('val-bleed').innerText = data.drift.language_bleed_index.toFixed(4);
+      document.getElementById('inspector-output').innerText = JSON.stringify(data, null, 2);
+    }
+
+    async function executeExport() {
+      const fmt = document.getElementById('export-fmt').value;
+      const res = await fetch('/api/export', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          format: fmt,
+          token: document.getElementById('cfg-token').value,
+          class_noun: document.getElementById('cfg-class').value
+        })
+      });
+      const data = await res.json();
+      document.getElementById('inspector-output').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function renderLossChart(history) {
+      const canvas = document.getElementById('lossCanvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (!history || history.length === 0) return;
+
+      // Draw grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let y = 20; y < h; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      const maxLoss = Math.max(...history.map(e => e.total_loss), 0.1) * 1.1;
+      const stepX = (w - 40) / Math.max(history.length - 1, 1);
+
+      function plotLine(key, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        history.forEach((e, i) => {
+          const x = 20 + i * stepX;
+          const y = h - 20 - (e[key] / maxLoss) * (h - 40);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+
+      plotLine('subject_loss', '#bc8cff');
+      plotLine('prior_loss', '#d29922');
+      plotLine('total_loss', '#39c5bb');
+    }
+
+    // Initial evaluation load
+    executeEvaluation();
+  </script>
+</body>
+</html>
