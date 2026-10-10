@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use PriorAnchor in your research or production systems, please cite it as below."
+title: "PriorAnchor: Dual-Objective Prior-Preservation Fine-Tuning and Subject Personalization Engine"
+authors:
+  - name: "PriorAnchor Core Engineering Team"
+version: 0.1.0
+date-released: 2026-10-10
+license: Apache-2.0
+repository-code: "https://github.com/shahriar-ahmed-seam/prioranchor"
+keywords:
+  - dreambooth
+  - diffusion-models
+  - subject-personalization
+  - lora
+  - prior-preservation
