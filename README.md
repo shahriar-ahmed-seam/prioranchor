@@ -156,10 +156,19 @@ prioranchor train \
 # 3. Evaluate concept drift and subject fidelity
 prioranchor eval --checkpoint checkpoints/prioranchor_lora_final.json --token "[V]" --class-noun dog
 
-# 4. Export adapter to Hugging Face Diffusers format
+# 4. Export adapter to Safetensors or Diffusers format
+prioranchor export --format safetensors --output-file checkpoints/lora.safetensors
 prioranchor export --format diffusers --output-file checkpoints/lora_diffusers.json
 
-# 5. Launch local telemetry console
+# 5. Run personalized generation inference
+prioranchor generate \
+  --checkpoint checkpoints/lora.safetensors \
+  --prompt "a photo of [V] dog running in the park" \
+  --steps 20 \
+  --cfg 7.5 \
+  --fuse
+
+# 6. Launch local telemetry console
 prioranchor serve --host 0.0.0.0 --port 8000
 ```
 
@@ -186,14 +195,15 @@ prioranchor/
 |   |-- peft/            # Modular LoRA layers, container, and weight merger
 |   |-- engine/          # Loss orchestrator and dual-stream training loop
 |   |-- metrics/         # DINO/CLIP fidelity evaluator and concept drift detector
-|   |-- adapters/        # Ecosystem exporters for Diffusers and ComfyUI
-|   |-- cli/             # Typer/Rich CLI implementation
+|   |-- adapters/        # SafeTensors I/O, Diffusers, ComfyUI, and inference pipeline
+|   |-- cli/             # Typer/Rich CLI suite
 |   `-- ui/              # Anti-AI-slop telemetry console and FastAPI backend
 |-- docs/
 |   |-- ARCHITECTURE.md  # Deep technical blueprint and subsystem flowcharts
 |   |-- SPECIFICATION.md # Formal RFC specifications and serialization formats
 |   `-- BENCHMARKS.md    # Mathematical formulations and empirical validation
 |-- tests/               # 100% test coverage suite
+|-- examples/            # End-to-end runnable SDK examples
 |-- Dockerfile           # Multi-stage production container
 `-- pyproject.toml       # Build system definition
 ```

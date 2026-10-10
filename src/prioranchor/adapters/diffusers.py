@@ -51,3 +51,33 @@ class DiffusersAdapter:
                 if key_alpha in diffusers_dict:
                     layer.alpha = float(diffusers_dict[key_alpha])
                     layer.scaling = layer.alpha / float(layer.rank)
+
+    @staticmethod
+    def save_safetensors(
+        container: LoRAContainer,
+        filepath: str,
+        metadata: Dict[str, str] | None = None,
+    ) -> str:
+        """Export container directly to a standard Hugging Face Diffusers .safetensors file."""
+        import json
+
+        from prioranchor.adapters.safetensors_io import SafeTensorsIO
+
+        weights_dict = DiffusersAdapter.to_diffusers_format(container)
+        meta = dict(metadata) if metadata else {"format": "pt", "engine": "prioranchor"}
+        meta["prioranchor_layers"] = json.dumps(list(container.layers.keys()))
+        out_path = SafeTensorsIO.save_file(weights_dict, filepath, metadata=meta)
+        return str(out_path)
+
+    @staticmethod
+    def load_safetensors(
+        filepath: str,
+        container: LoRAContainer,
+    ) -> Dict[str, str]:
+        """Load weights from a .safetensors file directly into a PriorAnchor container."""
+        from prioranchor.adapters.safetensors_io import SafeTensorsIO
+
+        weights_dict, metadata = SafeTensorsIO.load_file(filepath)
+        DiffusersAdapter.from_diffusers_format(weights_dict, container)
+        return metadata
+

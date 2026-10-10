@@ -282,22 +282,94 @@ def export_cmd(
     fmt = format.lower().strip()
     if fmt == "diffusers":
         data = DiffusersAdapter.to_diffusers_format(container)
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
     elif fmt == "comfyui":
         meta = ComfyUIAdapter.create_metadata(
             subject_name=f"{token} {class_noun}",
             trigger_phrase=f"a photo of a {token} {class_noun}",
         )
         data = ComfyUIAdapter.export_package(container, meta)
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    elif fmt in ("safetensors", "st"):
+        DiffusersAdapter.save_safetensors(container, output_file)
     else:
-        msg = f"Unsupported format '{format}'. Supported formats: diffusers, comfyui"
+        msg = f"Unsupported format '{format}'. Supported formats: diffusers, comfyui, safetensors"
         raise typer.BadParameter(msg)
-
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
 
     console.print(
         f"[bold green]Exported adapter to '{output_file}' in '{fmt}' format.[/bold green]"
     )
+
+
+@app.command(name="generate")
+def generate_cmd(
+    prompt: str = typer.Option(..., "--prompt", "-p", help="Text prompt for generation"),
+    checkpoint: str = typer.Option(
+        "checkpoints/prioranchor_lora_final.json",
+        "--checkpoint",
+        "-c",
+        help="Path to LoRA checkpoint (.json or .safetensors)",
+    ),
+    negative_prompt: str = typer.Option("", "--negative-prompt", "-n"),
+    steps: int = typer.Option(20, "--steps", help="Number of inference denoising steps"),
+    guidance_scale: float = typer.Option(
+        7.5, "--guidance-scale", "--cfg", help="Classifier-Free Guidance scale"
+    ),
+    seed: int = typer.Option(42, "--seed", "-s", help="RNG seed"),
+    fuse: bool = typer.Option(
+        False, "--fuse", help="Fold LoRA weights into base parameters for zero-latency inference"
+    ),
+    out: Optional[str] = typer.Option(
+        None, "--out", "-o", help="Optional output path to save generation JSON"
+    ),
+) -> None:
+    """Run personalized inference using PriorAnchor diffusion pipeline."""
+    from prioranchor.adapters.pipeline import PriorAnchorPipeline
+
+    ckpt_path = Path(checkpoint)
+    if ckpt_path.exists():
+        pipe = PriorAnchorPipeline.from_checkpoint(ckpt_path)
+    else:
+        console.print(
+            f"[dim]Checkpoint '{checkpoint}' not found; initializing standard test pipeline.[/dim]"
+        )
+        pipe = PriorAnchorPipeline()
+
+    if fuse:
+        pipe.fuse_lora()
+
+    output = pipe.generate(
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+        num_inference_steps=steps,
+        guidance_scale=guidance_scale,
+        seed=seed,
+    )
+
+    table = Table(title="PriorAnchor Generation Diagnostics", border_style="cyan")
+    table.add_column("Property", style="bold")
+    table.add_column("Value", style="cyan")
+    table.add_row("Prompt", output.prompt)
+    table.add_row("Steps Completed", str(output.num_inference_steps))
+    table.add_row("Guidance Scale (CFG)", f"{output.guidance_scale:.1f}")
+    table.add_row("RNG Seed", str(output.seed))
+    table.add_row(
+        "Weight Fusion State", "Fused (Zero Overhead)" if output.fused else "Active Modular LoRA"
+    )
+    table.add_row(
+        "Latent Distribution",
+        f"Mean: {output.final_latent_mean:.4f}, Var: {output.final_latent_variance:.4f}",
+    )
+    console.print(table)
+
+    if out:
+        out_p = Path(out)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        out_p.write_text(json.dumps(output.model_dump(), indent=2), encoding="utf-8")
+        console.print(f"[bold green]Saved generation output to:[/bold green] [bold]{out}[/bold]")
+
 
 
 @app.command(name="serve")
